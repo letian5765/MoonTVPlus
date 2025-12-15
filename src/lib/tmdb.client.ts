@@ -137,41 +137,51 @@ export async function getTMDBUpcomingContent(
       getTMDBUpcomingTVShows(apiKey),
     ]);
 
+    // 检查是否有错误
+    if (moviesResult.code !== 200 && tvShowsResult.code !== 200) {
+      // 两个请求都失败，返回错误
+      return { code: moviesResult.code, list: [] };
+    }
+
     // 获取今天的日期（本地时区）
     const today = new Date();
     const todayStr = `${today.getFullYear()}-${String(today.getMonth() + 1).padStart(2, '0')}-${String(today.getDate()).padStart(2, '0')}`;
 
     // 转换电影数据为统一格式，并过滤掉已上映的
-    const movies: TMDBItem[] = moviesResult.list
-      .filter((movie) => {
-        // 只保留未来上映的电影
-        return movie.release_date && movie.release_date >= todayStr;
-      })
-      .map((movie) => ({
-        id: movie.id,
-        title: movie.title,
-        poster_path: movie.poster_path,
-        release_date: movie.release_date,
-        overview: movie.overview,
-        vote_average: movie.vote_average,
-        media_type: 'movie' as const,
-      }));
+    const movies: TMDBItem[] = moviesResult.code === 200
+      ? moviesResult.list
+          .filter((movie) => {
+            // 只保留未来上映的电影
+            return movie.release_date && movie.release_date >= todayStr;
+          })
+          .map((movie) => ({
+            id: movie.id,
+            title: movie.title,
+            poster_path: movie.poster_path,
+            release_date: movie.release_date,
+            overview: movie.overview,
+            vote_average: movie.vote_average,
+            media_type: 'movie' as const,
+          }))
+      : [];
 
     // 转换电视剧数据为统一格式，并过滤掉已播出的
-    const tvShows: TMDBItem[] = tvShowsResult.list
-      .filter((tv) => {
-        // 只保留未来播出的电视剧
-        return tv.first_air_date && tv.first_air_date >= todayStr;
-      })
-      .map((tv) => ({
-        id: tv.id,
-        title: tv.name,
-        poster_path: tv.poster_path,
-        release_date: tv.first_air_date,
-        overview: tv.overview,
-        vote_average: tv.vote_average,
-        media_type: 'tv' as const,
-      }));
+    const tvShows: TMDBItem[] = tvShowsResult.code === 200
+      ? tvShowsResult.list
+          .filter((tv) => {
+            // 只保留未来播出的电视剧
+            return tv.first_air_date && tv.first_air_date >= todayStr;
+          })
+          .map((tv) => ({
+            id: tv.id,
+            title: tv.name,
+            poster_path: tv.poster_path,
+            release_date: tv.first_air_date,
+            overview: tv.overview,
+            vote_average: tv.vote_average,
+            media_type: 'tv' as const,
+          }))
+      : [];
 
     // 合并并返回
     const allContent = [...movies, ...tvShows];
